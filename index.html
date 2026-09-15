@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Text to Handwriting Converter</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>✍️</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;600;700&family=Shadows+Into+Light&family=Homemade+Apple&family=Reenie+Beanie&family=Indie+Flower&family=Rock+Salt&family=Nothing+You+Could+Do&family=Architects+Daughter&family=Annie+Use+Your+Telescope&family=Beau+Rivage&family=Playpen+Sans&family=Yuyu+Short&family=Qwitcher+Grypen&family=Slackside+One&family=Cedarville+Cursive&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body data-theme="light">
+<div class="app">
+
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-mark">✍️</span>
+      <span class="brand-name">Text to Handwriting</span>
+    </div>
+    <button id="themeToggleBtn" class="icon-btn" title="Toggle dark mode" type="button">🌙</button>
+  </header>
+
+  <div class="layout">
+
+    <aside class="controls">
+
+      <section class="panel">
+        <h3>Your text</h3>
+        <textarea id="textInput" rows="8" spellcheck="true" placeholder="Type or paste your text here..."></textarea>
+        <div class="hint">Wraps automatically to the page margins. Blank lines are preserved.</div>
+      </section>
+
+      <section class="panel">
+        <h3>Handwriting style</h3>
+        <div id="fontSwatches" class="swatch-grid"></div>
+      </section>
+
+      <section class="panel">
+        <h3>Pen</h3>
+        <div class="ink-row">
+          <button class="ink-swatch" data-color="#1c1c1c" style="--c:#1c1c1c" title="Black" type="button"></button>
+          <button class="ink-swatch" data-color="#1a3c8f" style="--c:#1a3c8f" title="Blue" type="button"></button>
+          <button class="ink-swatch" data-color="#9c1c1c" style="--c:#9c1c1c" title="Red" type="button"></button>
+          <input id="inkColorPicker" type="color" title="Custom ink color" value="#1a3c8f">
+        </div>
+      </section>
+
+      <section class="panel">
+        <h3>Size &amp; spacing</h3>
+        <div class="field">
+          <label for="fontSizeRange">Font size <span id="fontSizeVal" class="val"></span></label>
+          <input id="fontSizeRange" type="range" min="12" max="44" step="1" value="22">
+        </div>
+        <div class="field">
+          <label for="lineSpacingRange">Line spacing <span id="lineSpacingVal" class="val"></span></label>
+          <input id="lineSpacingRange" type="range" min="1" max="2.4" step="0.05" value="1.6">
+        </div>
+        <div class="field">
+          <label for="boldnessRange">Boldness <span id="boldnessVal" class="val"></span></label>
+          <input id="boldnessRange" type="range" min="0" max="3" step="0.1" value="0.6">
+          <div class="hint">Left is fine &amp; sharp, right is thick &amp; bold.</div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h3>Page</h3>
+        <div class="field">
+          <label for="pageSizeSelect">Size</label>
+          <select id="pageSizeSelect">
+            <option value="a4">A4</option>
+            <option value="letter">US Letter</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="pageTypeSelect">Paper type</label>
+          <select id="pageTypeSelect">
+            <option value="blank">Blank</option>
+            <option value="ruled" selected>Ruled</option>
+            <option value="grid">Grid</option>
+            <option value="notebook">Notebook</option>
+            <option value="notebookMargin">Notebook (Double Margin)</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="marginRange">Margin <span id="marginVal" class="val"></span></label>
+          <input id="marginRange" type="range" min="0.3" max="1.5" step="0.05" value="0.8">
+        </div>
+        <div class="checks">
+          <label><input id="agedCheckbox" type="checkbox"> Aged / cream paper</label>
+          <label><input id="textureCheckbox" type="checkbox" checked> Paper grain texture</label>
+          <label><input id="bwCheckbox" type="checkbox"> Black &amp; white</label>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h3>Realism</h3>
+        <div class="checks">
+          <label><input id="pressureCheckbox" type="checkbox" checked> Simulate pen pressure</label>
+          <label><input id="correctionsCheckbox" type="checkbox" checked> Occasional corrections</label>
+        </div>
+        <div class="hint">A rare word gets struck through and rewritten smaller above it, like a real hand-written slip. The text you read is never actually changed.</div>
+        <button id="shuffleBtn" class="secondary-btn" type="button">🎲 Re-roll natural variation</button>
+      </section>
+
+      <section class="panel export-panel">
+        <h3>Export</h3>
+        <button id="downloadPngBtn" class="primary-btn" type="button">⬇ Download PNG</button>
+        <button id="downloadPdfBtn" class="primary-btn" type="button">⬇ Download PDF</button>
+        <button id="printBtn" class="secondary-btn" type="button">🖨 Print</button>
+      </section>
+
+    </aside>
+
+    <main class="preview-wrap">
+      <div class="preview-toolbar">
+        <span id="pageCountLabel" class="page-count">1 page</span>
+      </div>
+      <div id="pages" class="pages"></div>
+    </main>
+
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
