@@ -30,6 +30,7 @@ const FONT_DEFS = [
   { id: "annie", label: "Annie Use Your Telescope", family: "Annie Use Your Telescope", weight: 400 },
   { id: "playpen", label: "Playpen Sans", family: "Playpen Sans", weight: 300 },
   { id: "yuyushort", label: "Yuyu Short", family: "Yuyu Short", weight: 400 },
+  { id: "gaegu", label: "Gaegu", family: "Gaegu", weight: 300 },
 
   // Added later, all single-weight so their only weight is already the lightest.
   { id: "overtherainbow", label: "Over the Rainbow", family: "Over the Rainbow", weight: 400 },
