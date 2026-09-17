@@ -13,7 +13,6 @@ const FONT_DEFS = [
   // alternative at its lightest available Google Fonts weight (most of these
   // handwriting families only ship one weight, so "lightest" is just their only one).
   { id: "reenie", label: "Reenie Beanie", family: "Reenie Beanie", weight: 400 },
-  { id: "comingsoon", label: "Coming Soon", family: "Coming Soon", weight: 400 },
   { id: "caveat", label: "Caveat", family: "Caveat", weight: 400 },
   { id: "nanumpen", label: "Nanum Pen Script", family: "Nanum Pen Script", weight: 400 },
   { id: "kalam", label: "Kalam", family: "Kalam", weight: 300 },
@@ -28,7 +27,6 @@ const FONT_DEFS = [
   { id: "indie", label: "Indie Flower", family: "Indie Flower", weight: 400 },
   { id: "nycd", label: "Nothing You Could Do", family: "Nothing You Could Do", weight: 400 },
   { id: "annie", label: "Annie Use Your Telescope", family: "Annie Use Your Telescope", weight: 400 },
-  { id: "playpen", label: "Playpen Sans", family: "Playpen Sans", weight: 300 },
   { id: "yuyushort", label: "Yuyu Short", family: "Yuyu Short", weight: 400 },
   { id: "gaegu", label: "Gaegu", family: "Gaegu", weight: 300 },
 
