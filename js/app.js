@@ -17,22 +17,27 @@ const FONT_DEFS = [
   { id: "caveat", label: "Caveat", family: "Caveat", weight: 400 },
   { id: "nanumpen", label: "Nanum Pen Script", family: "Nanum Pen Script", weight: 400 },
   { id: "kalam", label: "Kalam", family: "Kalam", weight: 300 },
-  { id: "itim", label: "Itim", family: "Itim", weight: 400 },
   { id: "shadows", label: "Shadows Into Light", family: "Shadows Into Light", weight: 400 },
   { id: "shadows2", label: "Shadows Into Light Two", family: "Shadows Into Light Two", weight: 400 },
   { id: "justanotherhand", label: "Just Another Hand", family: "Just Another Hand", weight: 400 },
   { id: "justmeagain", label: "Just Me Again Down Here", family: "Just Me Again Down Here", weight: 400 },
   { id: "cedarville", label: "Cedarville Cursive", family: "Cedarville Cursive", weight: 400 },
-  { id: "mrssaintdelafield", label: "Mrs Saint Delafield", family: "Mrs Saint Delafield", weight: 400 },
 
   // Unrated, kept as-is.
   { id: "homemade", label: "Homemade Apple", family: "Homemade Apple", weight: 400 },
   { id: "indie", label: "Indie Flower", family: "Indie Flower", weight: 400 },
   { id: "nycd", label: "Nothing You Could Do", family: "Nothing You Could Do", weight: 400 },
-  { id: "neucha", label: "Neucha", family: "Neucha", weight: 400 },
   { id: "annie", label: "Annie Use Your Telescope", family: "Annie Use Your Telescope", weight: 400 },
   { id: "playpen", label: "Playpen Sans", family: "Playpen Sans", weight: 300 },
   { id: "yuyushort", label: "Yuyu Short", family: "Yuyu Short", weight: 400 },
+
+  // Added later, all single-weight so their only weight is already the lightest.
+  { id: "overtherainbow", label: "Over the Rainbow", family: "Over the Rainbow", weight: 400 },
+  { id: "zeyada", label: "Zeyada", family: "Zeyada", weight: 400 },
+  { id: "coveredbyyourgrace", label: "Covered By Your Grace", family: "Covered By Your Grace", weight: 400 },
+  { id: "labelleaurore", label: "La Belle Aurore", family: "La Belle Aurore", weight: 400 },
+  { id: "dawning", label: "Dawning of a New Day", family: "Dawning of a New Day", weight: 400 },
+  { id: "gloriahallelujah", label: "Gloria Hallelujah", family: "Gloria Hallelujah", weight: 400 },
 ];
 
 const defaultState = {
