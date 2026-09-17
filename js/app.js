@@ -9,22 +9,25 @@ const PAGE_SIZES = {
 };
 
 const FONT_DEFS = [
-  { id: "caveat", label: "Caveat", family: "Caveat" },
-  { id: "kalam", label: "Kalam", family: "Kalam" },
-  { id: "shadows", label: "Shadows Into Light", family: "Shadows Into Light" },
-  { id: "homemade", label: "Homemade Apple", family: "Homemade Apple" },
-  { id: "reenie", label: "Reenie Beanie", family: "Reenie Beanie" },
-  { id: "indie", label: "Indie Flower", family: "Indie Flower" },
-  { id: "rocksalt", label: "Rock Salt", family: "Rock Salt" },
-  { id: "nycd", label: "Nothing You Could Do", family: "Nothing You Could Do" },
-  { id: "archdaughter", label: "Architects Daughter", family: "Architects Daughter" },
-  { id: "annie", label: "Annie Use Your Telescope", family: "Annie Use Your Telescope" },
-  { id: "beaurivage", label: "Beau Rivage", family: "Beau Rivage" },
-  { id: "playpen", label: "Playpen Sans", family: "Playpen Sans" },
-  { id: "yuyushort", label: "Yuyu Short", family: "Yuyu Short" },
-  { id: "qwitcher", label: "Qwitcher Grypen", family: "Qwitcher Grypen" },
-  { id: "slackside", label: "Slackside One", family: "Slackside One" },
-  { id: "cedarville", label: "Cedarville Cursive", family: "Cedarville Cursive" },
+  { id: "caveat", label: "Caveat", family: "Caveat", weight: 400 },
+  { id: "kalam", label: "Kalam", family: "Kalam", weight: 300 },
+  { id: "shadows", label: "Shadows Into Light", family: "Shadows Into Light", weight: 400 },
+  { id: "homemade", label: "Homemade Apple", family: "Homemade Apple", weight: 400 },
+  { id: "reenie", label: "Reenie Beanie", family: "Reenie Beanie", weight: 400 },
+  { id: "indie", label: "Indie Flower", family: "Indie Flower", weight: 400 },
+  { id: "rocksalt", label: "Rock Salt", family: "Rock Salt", weight: 400 },
+  { id: "justanotherhand", label: "Just Another Hand (light)", family: "Just Another Hand", weight: 400 },
+  { id: "nycd", label: "Nothing You Could Do", family: "Nothing You Could Do", weight: 400 },
+  { id: "archdaughter", label: "Architects Daughter", family: "Architects Daughter", weight: 400 },
+  { id: "neucha", label: "Neucha (light)", family: "Neucha", weight: 400 },
+  { id: "annie", label: "Annie Use Your Telescope", family: "Annie Use Your Telescope", weight: 400 },
+  { id: "beaurivage", label: "Beau Rivage", family: "Beau Rivage", weight: 400 },
+  { id: "playpen", label: "Playpen Sans", family: "Playpen Sans", weight: 300 },
+  { id: "sriracha", label: "Sriracha (light)", family: "Sriracha", weight: 400 },
+  { id: "yuyushort", label: "Yuyu Short", family: "Yuyu Short", weight: 400 },
+  { id: "qwitcher", label: "Qwitcher Grypen", family: "Qwitcher Grypen", weight: 400 },
+  { id: "slackside", label: "Slackside One", family: "Slackside One", weight: 400 },
+  { id: "cedarville", label: "Cedarville Cursive", family: "Cedarville Cursive", weight: 400 },
 ];
 
 const defaultState = {
@@ -33,7 +36,7 @@ const defaultState = {
   inkColor: "#1a3c8f",
   fontSizePt: 22,
   lineSpacing: 1.6,
-  boldness: 1.1,
+  boldness: 0.5,
   pageSize: "a4",
   marginIn: 0.8,
   pageType: "ruled",
@@ -105,7 +108,7 @@ function buildSwatches() {
     btn.type = "button";
     btn.className = "font-swatch" + (f.id === state.fontId ? " active" : "");
     btn.dataset.id = f.id;
-    btn.innerHTML = `<span class="preview" style="font-family:'${f.family}',cursive">Ag</span><span class="label">${f.label}</span>`;
+    btn.innerHTML = `<span class="preview" style="font-family:'${f.family}',cursive;font-weight:${f.weight}">Ag</span><span class="label">${f.label}</span>`;
     btn.addEventListener("click", () => {
       state.fontId = f.id;
       refreshSwatchActive();
@@ -201,8 +204,12 @@ const measureCtx = measureCanvas.getContext("2d");
 const scratchCanvas = document.createElement("canvas");
 const scratchCtx = scratchCanvas.getContext("2d");
 
-function buildLines(fontSizePx, family, contentWidth) {
-  measureCtx.font = `${fontSizePx}px "${family}", cursive`;
+function fontStr(sizePx, family, weight) {
+  return `${weight || 400} ${sizePx}px "${family}", cursive`;
+}
+
+function buildLines(fontSizePx, family, contentWidth, weight) {
+  measureCtx.font = fontStr(fontSizePx, family, weight);
   const spaceWidth = measureCtx.measureText(" ").width;
   const paragraphs = state.text.replace(/\r\n/g, "\n").split("\n");
   const lines = [];
@@ -375,7 +382,7 @@ function drawBackground(ctx, w, h, opts) {
 
 let currentPagesMeta = []; // { canvas } for export
 
-function drawCorrection(ctx, wordChars, xStart, xEnd, y, fontSizePx, lineHeightPx, baseHsl, family) {
+function drawCorrection(ctx, wordChars, xStart, xEnd, y, fontSizePx, lineHeightPx, baseHsl, family, weight) {
   // simulates a hand-written self-correction: strike the word, cap it with a caret,
   // and squeeze the same word back in smaller just above — never changes the text
   // that's actually read, just how it looks written. Sizing is capped by the actual
@@ -419,7 +426,7 @@ function drawCorrection(ctx, wordChars, xStart, xEnd, y, fontSizePx, lineHeightP
   const smallSize = Math.min(fontSizePx * 0.6, headroom * 0.5);
   const smallY = y - Math.min(fontSizePx * 0.85, headroom * 0.78);
   ctx.save();
-  ctx.font = `${smallSize}px "${family}", cursive`;
+  ctx.font = fontStr(smallSize, family, weight);
   ctx.textBaseline = "alphabetic";
   let sx = xStart;
   wordChars.forEach(c => {
@@ -452,7 +459,7 @@ function render() {
   const contentHeight = canvasH - marginPx.top - marginPx.bottom;
   const linesPerPage = Math.max(1, Math.floor(contentHeight / lineHeightPx));
 
-  const lines = buildLines(fontSizePx, font.family, contentWidth);
+  const lines = buildLines(fontSizePx, font.family, contentWidth, font.weight);
   const pages = paginate(lines, linesPerPage);
 
   syncCanvasCount(pages.length, canvasW, canvasH);
@@ -473,7 +480,7 @@ function render() {
       marginPx, lineHeightPx, baselineOffsetPx, linesPerPage,
     });
 
-    ctx.font = `${fontSizePx}px "${font.family}", cursive`;
+    ctx.font = fontStr(fontSizePx, font.family, font.weight);
     ctx.textBaseline = "alphabetic";
 
     pageLines.forEach((line, li) => {
@@ -527,8 +534,8 @@ function render() {
         const isLastOfWord = !next || next.ch === " " || next.wordId !== c.wordId;
         if (isLastOfWord) {
           if (state.corrections && isWordCorrected(c.wordId, state.seed)) {
-            drawCorrection(ctx, wordChars, wordStartX, x, y, fontSizePx, lineHeightPx, baseHsl, font.family);
-            ctx.font = `${fontSizePx}px "${font.family}", cursive`;
+            drawCorrection(ctx, wordChars, wordStartX, x, y, fontSizePx, lineHeightPx, baseHsl, font.family, font.weight);
+            ctx.font = fontStr(fontSizePx, font.family, font.weight);
           }
           wordStartX = null;
           wordChars = [];
@@ -746,8 +753,7 @@ function init() {
 
   applyStateToControls();
 
-  const familyList = FONT_DEFS.map(f => f.family);
-  Promise.all(familyList.map(f => document.fonts.load(`16px "${f}"`).catch(() => {})))
+  Promise.all(FONT_DEFS.map(f => document.fonts.load(`${f.weight || 400} 16px "${f.family}"`).catch(() => {})))
     .finally(render);
 
   document.fonts.addEventListener("loadingdone", () => render());
