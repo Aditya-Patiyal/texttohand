@@ -32,6 +32,33 @@
       </section>
 
       <section class="panel">
+        <h3>Selected text style</h3>
+        <div id="selectionInfo" class="hint">Select text in the box above to style just that part.</div>
+        <div class="override-field">
+          <label><input id="ovBoldnessToggle" type="checkbox" disabled> Custom boldness</label>
+          <input id="ovBoldnessRange" type="range" min="0" max="3" step="0.1" value="1" disabled>
+        </div>
+        <div class="override-field">
+          <label><input id="ovInkToggle" type="checkbox" disabled> Custom ink color</label>
+          <div class="ink-row">
+            <button class="ov-ink-swatch" data-color="#1c1c1c" style="--c:#1c1c1c" title="Black" type="button" disabled></button>
+            <button class="ov-ink-swatch" data-color="#1a3c8f" style="--c:#1a3c8f" title="Blue" type="button" disabled></button>
+            <button class="ov-ink-swatch" data-color="#9c1c1c" style="--c:#9c1c1c" title="Red" type="button" disabled></button>
+            <input id="ovInkColorPicker" type="color" title="Custom ink color" value="#1a3c8f" disabled>
+          </div>
+        </div>
+        <div class="override-field">
+          <label><input id="ovFontToggle" type="checkbox" disabled> Custom font style</label>
+          <select id="ovFontSelect" disabled></select>
+        </div>
+        <div class="override-actions">
+          <button id="applySelectionBtn" class="primary-btn" type="button" disabled>Apply to selection</button>
+          <button id="clearSelectionBtn" class="secondary-btn" type="button" disabled>Clear selection styling</button>
+        </div>
+        <div class="hint">Everything else (pen, size, page) still styles the whole document.</div>
+      </section>
+
+      <section class="panel">
         <h3>Handwriting style</h3>
         <div id="fontSwatches" class="swatch-grid"></div>
       </section>

@@ -46,6 +46,10 @@ const defaultState = {
   pressure: true,
   corrections: true,
   seed: 12345,
+  // per-range style overrides on top of the settings above, e.g. [{start:0,end:12,boldness:2}].
+  // start/end are character offsets into `text`; only the keys present are overridden,
+  // everything else is inherited from the global settings.
+  overrides: [],
 };
 
 let state = { ...defaultState, ...(loadAutosave() || {}) };
@@ -95,6 +99,15 @@ const el = {
   printBtn: document.getElementById("printBtn"),
   pagesContainer: document.getElementById("pages"),
   pageCountLabel: document.getElementById("pageCountLabel"),
+  selectionInfo: document.getElementById("selectionInfo"),
+  ovBoldnessToggle: document.getElementById("ovBoldnessToggle"),
+  ovBoldnessRange: document.getElementById("ovBoldnessRange"),
+  ovInkToggle: document.getElementById("ovInkToggle"),
+  ovInkColorPicker: document.getElementById("ovInkColorPicker"),
+  ovFontToggle: document.getElementById("ovFontToggle"),
+  ovFontSelect: document.getElementById("ovFontSelect"),
+  applySelectionBtn: document.getElementById("applySelectionBtn"),
+  clearSelectionBtn: document.getElementById("clearSelectionBtn"),
 };
 
 // ---------- font helpers ----------
@@ -122,6 +135,102 @@ function refreshSwatchActive() {
   el.fontSwatches.querySelectorAll(".font-swatch").forEach(b => {
     b.classList.toggle("active", b.dataset.id === state.fontId);
   });
+}
+
+// ---------- per-range style overrides ----------
+// Overrides are a flat, sorted, non-overlapping list of {start, end, boldness?, inkColor?, fontId?}
+// covering slices of state.text. Only the keys present on an entry are overridden; anything
+// absent falls back to the global setting. applyOverride() keeps that invariant when a new
+// patch is stamped over an arbitrary (possibly overlapping) range.
+
+const OVERRIDE_KEYS = ["boldness", "inkColor", "fontId"];
+
+function hasAnyOverrideKey(o) {
+  return OVERRIDE_KEYS.some(k => o[k] !== undefined);
+}
+
+function mergeOverrideProps(base, patch) {
+  const merged = { ...base };
+  OVERRIDE_KEYS.forEach(k => {
+    if (!Object.prototype.hasOwnProperty.call(patch, k)) return;
+    if (patch[k] === undefined) delete merged[k];
+    else merged[k] = patch[k];
+  });
+  return merged;
+}
+
+function applyOverride(start, end, patch) {
+  if (end <= start) return;
+  const sorted = state.overrides.slice().sort((a, b) => a.start - b.start);
+  const result = [];
+  let cursor = start;
+
+  sorted.forEach(seg => {
+    if (seg.end <= start || seg.start >= end) { result.push(seg); return; }
+    const segProps = OVERRIDE_KEYS.reduce((o, k) => (seg[k] !== undefined ? { ...o, [k]: seg[k] } : o), {});
+    if (seg.start < start) result.push({ start: seg.start, end: start, ...segProps });
+    const ovStart = Math.max(seg.start, start);
+    const ovEnd = Math.min(seg.end, end);
+    if (ovStart > cursor) result.push({ start: cursor, end: ovStart, ...patch });
+    result.push({ start: ovStart, end: ovEnd, ...mergeOverrideProps(segProps, patch) });
+    cursor = ovEnd;
+    if (seg.end > end) result.push({ start: end, end: seg.end, ...segProps });
+  });
+  if (cursor < end) result.push({ start: cursor, end, ...patch });
+
+  result.sort((a, b) => a.start - b.start);
+  const cleaned = [];
+  result.filter(hasAnyOverrideKey).forEach(seg => {
+    const prev = cleaned[cleaned.length - 1];
+    if (prev && prev.end === seg.start && OVERRIDE_KEYS.every(k => prev[k] === seg[k])) {
+      prev.end = seg.end;
+    } else {
+      cleaned.push({ ...seg });
+    }
+  });
+  state.overrides = cleaned;
+}
+
+function getOverrideAt(srcIndex) {
+  return state.overrides.find(o => srcIndex >= o.start && srcIndex < o.end) || null;
+}
+
+function effectiveFontFor(srcIndex) {
+  const o = getOverrideAt(srcIndex);
+  return fontById((o && o.fontId) || state.fontId);
+}
+
+// Shifts/trims ranges to follow a text edit found by diffing oldText -> newText.
+// Assumes a single contiguous edit region, true for normal typing/paste/delete.
+function adjustRangesForEdit(ranges, oldText, newText) {
+  if (ranges.length === 0) return ranges;
+  let prefix = 0;
+  const maxPrefix = Math.min(oldText.length, newText.length);
+  while (prefix < maxPrefix && oldText[prefix] === newText[prefix]) prefix++;
+  let suffix = 0;
+  const maxSuffix = Math.min(oldText.length, newText.length) - prefix;
+  while (suffix < maxSuffix && oldText[oldText.length - 1 - suffix] === newText[newText.length - 1 - suffix]) suffix++;
+  const editStart = prefix;
+  const oldEnd = oldText.length - suffix;
+  const newEnd = newText.length - suffix;
+  const delta = newEnd - oldEnd;
+
+  return ranges.map(r => {
+    let { start, end } = r;
+    if (start >= oldEnd) { start += delta; end += delta; }
+    else if (start >= editStart) {
+      start = editStart;
+      end = end >= oldEnd ? end + delta : editStart;
+    } else if (end > editStart) {
+      end = end >= oldEnd ? end + delta : editStart;
+    }
+    return { ...r, start, end };
+  });
+}
+
+function adjustOverridesForEdit(oldText, newText) {
+  if (state.overrides.length === 0) return;
+  state.overrides = adjustRangesForEdit(state.overrides, oldText, newText).filter(o => o.end > o.start && hasAnyOverrideKey(o));
 }
 
 // ---------- ink color ----------
@@ -209,19 +318,39 @@ function fontStr(sizePx, family, weight) {
 }
 
 function buildLines(fontSizePx, family, contentWidth, weight) {
-  measureCtx.font = fontStr(fontSizePx, family, weight);
+  const defaultFontStr = fontStr(fontSizePx, family, weight);
+  measureCtx.font = defaultFontStr;
   const spaceWidth = measureCtx.measureText(" ").width;
   const paragraphs = state.text.replace(/\r\n/g, "\n").split("\n");
   const lines = [];
   const wrapWidth = contentWidth - 4; // small buffer so per-char spacing jitter never visibly overflows
+  const hasOverrides = state.overrides.length > 0;
 
+  // measureCtx.font is a CSS shorthand string, expensive to reparse every call;
+  // only reassign it when the effective font for a character actually differs.
+  let measureFontSet = defaultFontStr;
+  function widthOf(ch, srcIndex) {
+    if (hasOverrides) {
+      const eff = effectiveFontFor(srcIndex);
+      const s = fontStr(fontSizePx, eff.family, eff.weight);
+      if (s !== measureFontSet) { measureCtx.font = s; measureFontSet = s; }
+    }
+    return measureCtx.measureText(ch).width;
+  }
+
+  let paraOffset = 0;
   paragraphs.forEach(para => {
-    if (para === "") { lines.push([]); return; }
+    if (para === "") { lines.push([]); paraOffset += 1; return; }
     const words = para.split(" ");
     let currentLine = [];
     let currentWidth = 0;
-    words.forEach(word => {
-      const chars = [...word].map(ch => ({ ch, w: measureCtx.measureText(ch).width }));
+    let localCursor = 0;
+    words.forEach((word, wi) => {
+      const wordStart = localCursor;
+      const chars = [...word].map((ch, ci) => {
+        const srcIndex = paraOffset + wordStart + ci;
+        return { ch, w: widthOf(ch, srcIndex), srcIndex };
+      });
       const wordWidth = chars.reduce((s, c) => s + c.w, 0);
       const needsSpace = currentLine.length > 0;
       const projected = currentWidth + (needsSpace ? spaceWidth : 0) + wordWidth;
@@ -231,12 +360,15 @@ function buildLines(fontSizePx, family, contentWidth, weight) {
         currentWidth = 0;
       }
       if (currentLine.length > 0) {
-        currentLine.push({ ch: " ", w: spaceWidth });
+        currentLine.push({ ch: " ", w: spaceWidth, srcIndex: paraOffset + wordStart - 1 });
         currentWidth += spaceWidth;
       }
       chars.forEach(c => { currentLine.push(c); currentWidth += c.w; });
+      localCursor += word.length;
+      if (wi < words.length - 1) localCursor += 1;
     });
     lines.push(currentLine);
+    paraOffset += para.length + 1;
   });
 
   let gIdx = 0;
@@ -465,6 +597,13 @@ function render() {
   syncCanvasCount(pages.length, canvasW, canvasH);
 
   const baseHsl = hexToHsl(state.inkColor);
+  const hasOverrides = state.overrides.length > 0;
+  const hslCache = new Map();
+  function hslFor(hex) {
+    if (hex === state.inkColor) return baseHsl;
+    if (!hslCache.has(hex)) hslCache.set(hex, hexToHsl(hex));
+    return hslCache.get(hex);
+  }
 
   if (scratchCanvas.width !== canvasW || scratchCanvas.height !== canvasH) {
     scratchCanvas.width = canvasW;
@@ -480,7 +619,8 @@ function render() {
       marginPx, lineHeightPx, baselineOffsetPx, linesPerPage,
     });
 
-    ctx.font = fontStr(fontSizePx, font.family, font.weight);
+    let drawFontSet = fontStr(fontSizePx, font.family, font.weight);
+    ctx.font = drawFontSet;
     ctx.textBaseline = "alphabetic";
 
     pageLines.forEach((line, li) => {
@@ -492,6 +632,7 @@ function render() {
       let x = marginPx.left;
       let wordStartX = null;
       let wordChars = [];
+      let wordEff = null; // effective {hsl, font} of the current word's first character, for drawCorrection
 
       line.forEach((c, idx) => {
         if (c.ch === " ") { x += c.w; return; }
@@ -503,10 +644,18 @@ function render() {
         const alpha = 1;
         const spacingJitter = (rnd(gi, state.seed, 6) - 0.5) * 2 * 0.35;
         const pressureScale = state.pressure ? (0.99 + rnd(gi, state.seed, 7) * 0.02) : 1;
-        const inkColor = hslToRgbString(baseHsl[0], baseHsl[1], baseHsl[2], 1);
 
-        if (wordStartX === null) wordStartX = x;
+        const ov = hasOverrides ? getOverrideAt(c.srcIndex) : null;
+        const effBoldness = (ov && ov.boldness !== undefined) ? ov.boldness : state.boldness;
+        const effHsl = hslFor((ov && ov.inkColor) || state.inkColor);
+        const effFont = (ov && ov.fontId) ? fontById(ov.fontId) : font;
+        const inkColor = hslToRgbString(effHsl[0], effHsl[1], effHsl[2], 1);
+
+        if (wordStartX === null) { wordStartX = x; wordEff = { hsl: effHsl, font: effFont }; }
         wordChars.push(c);
+
+        const fs = fontStr(fontSizePx, effFont.family, effFont.weight);
+        if (fs !== drawFontSet) { ctx.font = fs; drawFontSet = fs; }
 
         ctx.save();
         ctx.translate(x + jx, y + jy);
@@ -515,12 +664,12 @@ function render() {
         ctx.globalAlpha = alpha;
         ctx.fillStyle = inkColor;
         ctx.fillText(c.ch, 0, 0);
-        if (state.boldness > 0) {
+        if (effBoldness > 0) {
           // extra stroke on top of the fill fattens the glyph outline, simulating a bolder pen
           // without needing a separate bold font weight (custom-uploaded fonts are single-weight).
           // Kept crisp (round joins, no feathering) so it reads as a solid gel/ballpoint
           // line rather than a marker.
-          ctx.lineWidth = state.boldness * fontSizePx * 0.02;
+          ctx.lineWidth = effBoldness * fontSizePx * 0.02;
           ctx.strokeStyle = inkColor;
           ctx.lineJoin = "round";
           ctx.miterLimit = 2;
@@ -534,11 +683,13 @@ function render() {
         const isLastOfWord = !next || next.ch === " " || next.wordId !== c.wordId;
         if (isLastOfWord) {
           if (state.corrections && isWordCorrected(c.wordId, state.seed)) {
-            drawCorrection(ctx, wordChars, wordStartX, x, y, fontSizePx, lineHeightPx, baseHsl, font.family, font.weight);
-            ctx.font = fontStr(fontSizePx, font.family, font.weight);
+            // ctx.save/restore inside drawCorrection preserves ctx.font, so drawFontSet
+            // stays in sync with the live context without needing to reset it here.
+            drawCorrection(ctx, wordChars, wordStartX, x, y, fontSizePx, lineHeightPx, wordEff.hsl, wordEff.font.family, wordEff.font.weight);
           }
           wordStartX = null;
           wordChars = [];
+          wordEff = null;
         }
       });
     });
@@ -596,9 +747,83 @@ function scheduleRender() {
 // ---------- wire up controls ----------
 
 el.textInput.addEventListener("input", () => {
-  state.text = el.textInput.value;
+  const newText = el.textInput.value;
+  adjustOverridesForEdit(state.text, newText);
+  lastSelection = adjustRangesForEdit([lastSelection], state.text, newText)[0];
+  state.text = newText;
   saveAutosave();
+  updateSelectionUI();
   scheduleRender();
+});
+
+// ---------- selection-scoped style overrides ----------
+
+let lastSelection = { start: 0, end: 0 };
+
+function captureSelection() {
+  const s = el.textInput.selectionStart, e = el.textInput.selectionEnd;
+  if (typeof s === "number" && typeof e === "number") {
+    lastSelection = { start: Math.min(s, e), end: Math.max(s, e) };
+    updateSelectionUI();
+  }
+}
+["select", "mouseup", "keyup"].forEach(evt => el.textInput.addEventListener(evt, captureSelection));
+
+function refreshOverrideControlsEnabled() {
+  const has = lastSelection.end > lastSelection.start;
+  el.ovBoldnessToggle.disabled = !has;
+  el.ovInkToggle.disabled = !has;
+  el.ovFontToggle.disabled = !has;
+  el.applySelectionBtn.disabled = !has;
+  el.clearSelectionBtn.disabled = !has;
+  el.ovBoldnessRange.disabled = !has || !el.ovBoldnessToggle.checked;
+  el.ovInkColorPicker.disabled = !has || !el.ovInkToggle.checked;
+  el.ovFontSelect.disabled = !has || !el.ovFontToggle.checked;
+  document.querySelectorAll(".ov-ink-swatch").forEach(b => { b.disabled = !has || !el.ovInkToggle.checked; });
+}
+
+function updateSelectionUI() {
+  const { start, end } = lastSelection;
+  const n = end - start;
+  el.selectionInfo.textContent = n > 0
+    ? `${n} character${n === 1 ? "" : "s"} selected — styling below applies only to this text.`
+    : "Select text in the box above to style just that part.";
+  refreshOverrideControlsEnabled();
+}
+
+[el.ovBoldnessToggle, el.ovInkToggle, el.ovFontToggle].forEach(toggle => {
+  toggle.addEventListener("change", refreshOverrideControlsEnabled);
+});
+
+document.querySelectorAll(".ov-ink-swatch").forEach(b => {
+  b.addEventListener("click", () => {
+    el.ovInkColorPicker.value = b.dataset.color;
+    document.querySelectorAll(".ov-ink-swatch").forEach(o => o.classList.toggle("active", o === b));
+  });
+});
+el.ovInkColorPicker.addEventListener("input", () => {
+  document.querySelectorAll(".ov-ink-swatch").forEach(o => o.classList.remove("active"));
+});
+
+el.applySelectionBtn.addEventListener("click", () => {
+  const { start, end } = lastSelection;
+  if (end <= start) return;
+  const patch = {};
+  if (el.ovBoldnessToggle.checked) patch.boldness = Number(el.ovBoldnessRange.value);
+  if (el.ovInkToggle.checked) patch.inkColor = el.ovInkColorPicker.value;
+  if (el.ovFontToggle.checked) patch.fontId = el.ovFontSelect.value;
+  if (Object.keys(patch).length === 0) return;
+  applyOverride(start, end, patch);
+  saveAutosave();
+  render();
+});
+
+el.clearSelectionBtn.addEventListener("click", () => {
+  const { start, end } = lastSelection;
+  if (end <= start) return;
+  applyOverride(start, end, { boldness: undefined, inkColor: undefined, fontId: undefined });
+  saveAutosave();
+  render();
 });
 
 el.fontSizeRange.addEventListener("input", () => {
@@ -745,6 +970,9 @@ function applyStateToControls() {
   el.bwCheckbox.checked = state.blackAndWhite;
   el.pressureCheckbox.checked = state.pressure;
   el.correctionsCheckbox.checked = state.corrections;
+
+  el.ovFontSelect.innerHTML = FONT_DEFS.map(f => `<option value="${f.id}">${f.label}</option>`).join("");
+  updateSelectionUI();
 }
 
 function init() {

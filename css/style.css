@@ -79,12 +79,22 @@ textarea#textInput{
 .font-swatch .label{font-size:10px;color:var(--muted);}
 
 .ink-row{display:flex;align-items:center;gap:10px;}
-.ink-swatch{
+.ink-swatch,.ov-ink-swatch{
   --c:#000;width:30px;height:30px;border-radius:50%;border:2px solid var(--border);
   background:var(--c);cursor:pointer;
 }
-.ink-swatch.active{border-color:var(--text);box-shadow:0 0 0 2px var(--panel), 0 0 0 4px var(--c);}
+.ink-swatch.active,.ov-ink-swatch.active{border-color:var(--text);box-shadow:0 0 0 2px var(--panel), 0 0 0 4px var(--c);}
+.ink-swatch:disabled,.ov-ink-swatch:disabled{opacity:.35;cursor:not-allowed;}
 #inkColorPicker{width:34px;height:30px;border:1px solid var(--border);border-radius:6px;background:none;cursor:pointer;padding:0;}
+#inkColorPicker:disabled{opacity:.35;cursor:not-allowed;}
+
+.override-field{margin-bottom:10px;}
+.override-field:last-of-type{margin-bottom:0;}
+.override-field > label{display:flex;align-items:center;gap:6px;font-size:12px;margin-bottom:6px;cursor:pointer;}
+.override-field input[type="range"]:disabled,
+.override-field select:disabled{opacity:.45;cursor:not-allowed;}
+.override-actions{display:flex;flex-direction:column;gap:8px;margin-top:12px;}
+.override-actions button:disabled{opacity:.45;cursor:not-allowed;}
 
 .field{margin-bottom:10px;}
 .field:last-child{margin-bottom:0;}
@@ -105,13 +115,15 @@ select{
 }
 .secondary-btn:hover{border-color:var(--accent);color:var(--accent);}
 
-.export-panel .primary-btn{
+.primary-btn{
   width:100%;padding:11px 10px;border-radius:8px;border:none;
   background:var(--accent);color:var(--accent-contrast);cursor:pointer;
-  font-size:13px;font-weight:600;margin-bottom:8px;
+  font-size:13px;font-weight:600;
 }
-.export-panel .primary-btn:hover{filter:brightness(1.08);}
+.primary-btn:hover{filter:brightness(1.08);}
+.export-panel .primary-btn{margin-bottom:8px;}
 .export-panel .secondary-btn{margin-top:0;}
+.override-actions .secondary-btn{margin-top:0;}
 
 .preview-wrap{flex:1 1 auto;overflow-y:auto;padding:20px;}
 .preview-toolbar{display:flex;justify-content:center;margin-bottom:14px;}
