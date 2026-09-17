@@ -10,6 +10,7 @@ const PAGE_SIZES = {
 
 const FONT_DEFS = [
   { id: "caveat", label: "Caveat", family: "Caveat" },
+  { id: "kalam", label: "Kalam", family: "Kalam" },
   { id: "shadows", label: "Shadows Into Light", family: "Shadows Into Light" },
   { id: "homemade", label: "Homemade Apple", family: "Homemade Apple" },
   { id: "reenie", label: "Reenie Beanie", family: "Reenie Beanie" },
@@ -494,26 +495,14 @@ function render() {
         const jy = (rnd(gi, state.seed, 3) - 0.5) * 2 * (fontSizePx * 0.04)
                  + Math.sin(gi * 0.35) * fontSizePx * 0.012
                  + lineDrift * driftFrac;
-        const alpha = Math.min(1, Math.max(0.72, 0.92 + (rnd(gi, state.seed, 4) - 0.5) * 0.24));
-        const lightDelta = (rnd(gi, state.seed, 5) - 0.5) * 10;
+        const alpha = Math.min(1, Math.max(0.88, 0.97 + (rnd(gi, state.seed, 4) - 0.5) * 0.1));
+        const lightDelta = (rnd(gi, state.seed, 5) - 0.5) * 6;
         const spacingJitter = (rnd(gi, state.seed, 6) - 0.5) * 2 * 1.1;
         const pressureScale = state.pressure ? (0.96 + rnd(gi, state.seed, 7) * 0.08) : 1;
         const inkColor = hslToRgbString(baseHsl[0], baseHsl[1], Math.min(90, Math.max(8, baseHsl[2] + lightDelta)), 1);
 
         if (wordStartX === null) wordStartX = x;
         wordChars.push(c);
-
-        if (rnd(gi, state.seed, 8) < 0.14) {
-          // ink bleed: a few soft low-alpha copies underneath so a subset of letters
-          // look like ink that fed into the paper fiber rather than a crisp vector edge.
-          ctx.save();
-          ctx.translate(x + jx, y + jy);
-          ctx.rotate(rot);
-          ctx.globalAlpha = alpha * 0.16;
-          ctx.fillStyle = inkColor;
-          [[-0.7, 0], [0.7, 0], [0, -0.7], [0, 0.7]].forEach(([dx, dy]) => ctx.fillText(c.ch, dx, dy));
-          ctx.restore();
-        }
 
         ctx.save();
         ctx.translate(x + jx, y + jy);
@@ -525,7 +514,8 @@ function render() {
         if (state.boldness > 0) {
           // extra stroke on top of the fill fattens the glyph outline, simulating a bolder pen
           // without needing a separate bold font weight (custom-uploaded fonts are single-weight).
-          ctx.lineWidth = state.boldness * fontSizePx * 0.028;
+          // Kept thin relative to boldness so it reads as a ballpoint/gel line rather than a marker.
+          ctx.lineWidth = state.boldness * fontSizePx * 0.014;
           ctx.strokeStyle = inkColor;
           ctx.lineJoin = "round";
           ctx.miterLimit = 2;
@@ -548,13 +538,22 @@ function render() {
       });
     });
 
-    // composite the fully-drawn page in one shot so the black & white filter costs
-    // one pass per page rather than one per character.
+    // composite the fully-drawn page in one shot. Grayscale is applied by hand on
+    // pixel data rather than via ctx.filter, since canvas filter support (and its
+    // interaction with drawImage/toDataURL) is inconsistent across browsers.
     const pageCtx = canvas.getContext("2d");
     pageCtx.clearRect(0, 0, canvasW, canvasH);
-    pageCtx.filter = state.blackAndWhite ? "grayscale(1)" : "none";
-    pageCtx.drawImage(scratchCanvas, 0, 0);
-    pageCtx.filter = "none";
+    if (state.blackAndWhite) {
+      const imgData = scratchCtx.getImageData(0, 0, canvasW, canvasH);
+      const d = imgData.data;
+      for (let p = 0; p < d.length; p += 4) {
+        const gray = d[p] * 0.299 + d[p + 1] * 0.587 + d[p + 2] * 0.114;
+        d[p] = d[p + 1] = d[p + 2] = gray;
+      }
+      pageCtx.putImageData(imgData, 0, 0);
+    } else {
+      pageCtx.drawImage(scratchCanvas, 0, 0);
+    }
   });
 
   el.pageCountLabel.textContent = pages.length === 1 ? "1 page" : `${pages.length} pages`;
