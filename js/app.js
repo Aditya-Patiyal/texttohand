@@ -9,30 +9,35 @@ const PAGE_SIZES = {
 };
 
 const FONT_DEFS = [
-  { id: "caveat", label: "Caveat", family: "Caveat", weight: 400 },
-  { id: "kalam", label: "Kalam", family: "Kalam", weight: 300 },
-  { id: "shadows", label: "Shadows Into Light", family: "Shadows Into Light", weight: 400 },
-  { id: "homemade", label: "Homemade Apple", family: "Homemade Apple", weight: 400 },
+  // Ordered by realism/attractiveness ranking, each followed by a similar-styled
+  // alternative at its lightest available Google Fonts weight (most of these
+  // handwriting families only ship one weight, so "lightest" is just their only one).
   { id: "reenie", label: "Reenie Beanie", family: "Reenie Beanie", weight: 400 },
-  { id: "indie", label: "Indie Flower", family: "Indie Flower", weight: 400 },
-  { id: "rocksalt", label: "Rock Salt", family: "Rock Salt", weight: 400 },
-  { id: "justanotherhand", label: "Just Another Hand (light)", family: "Just Another Hand", weight: 400 },
-  { id: "nycd", label: "Nothing You Could Do", family: "Nothing You Could Do", weight: 400 },
-  { id: "archdaughter", label: "Architects Daughter", family: "Architects Daughter", weight: 400 },
-  { id: "neucha", label: "Neucha (light)", family: "Neucha", weight: 400 },
-  { id: "annie", label: "Annie Use Your Telescope", family: "Annie Use Your Telescope", weight: 400 },
-  { id: "beaurivage", label: "Beau Rivage", family: "Beau Rivage", weight: 400 },
-  { id: "playpen", label: "Playpen Sans", family: "Playpen Sans", weight: 300 },
-  { id: "sriracha", label: "Sriracha (light)", family: "Sriracha", weight: 400 },
-  { id: "yuyushort", label: "Yuyu Short", family: "Yuyu Short", weight: 400 },
-  { id: "qwitcher", label: "Qwitcher Grypen", family: "Qwitcher Grypen", weight: 400 },
-  { id: "slackside", label: "Slackside One", family: "Slackside One", weight: 400 },
+  { id: "comingsoon", label: "Coming Soon", family: "Coming Soon", weight: 400 },
+  { id: "caveat", label: "Caveat", family: "Caveat", weight: 400 },
+  { id: "nanumpen", label: "Nanum Pen Script", family: "Nanum Pen Script", weight: 400 },
+  { id: "kalam", label: "Kalam", family: "Kalam", weight: 300 },
+  { id: "itim", label: "Itim", family: "Itim", weight: 400 },
+  { id: "shadows", label: "Shadows Into Light", family: "Shadows Into Light", weight: 400 },
+  { id: "shadows2", label: "Shadows Into Light Two", family: "Shadows Into Light Two", weight: 400 },
+  { id: "justanotherhand", label: "Just Another Hand", family: "Just Another Hand", weight: 400 },
+  { id: "justmeagain", label: "Just Me Again Down Here", family: "Just Me Again Down Here", weight: 400 },
   { id: "cedarville", label: "Cedarville Cursive", family: "Cedarville Cursive", weight: 400 },
+  { id: "mrssaintdelafield", label: "Mrs Saint Delafield", family: "Mrs Saint Delafield", weight: 400 },
+
+  // Unrated, kept as-is.
+  { id: "homemade", label: "Homemade Apple", family: "Homemade Apple", weight: 400 },
+  { id: "indie", label: "Indie Flower", family: "Indie Flower", weight: 400 },
+  { id: "nycd", label: "Nothing You Could Do", family: "Nothing You Could Do", weight: 400 },
+  { id: "neucha", label: "Neucha", family: "Neucha", weight: 400 },
+  { id: "annie", label: "Annie Use Your Telescope", family: "Annie Use Your Telescope", weight: 400 },
+  { id: "playpen", label: "Playpen Sans", family: "Playpen Sans", weight: 300 },
+  { id: "yuyushort", label: "Yuyu Short", family: "Yuyu Short", weight: 400 },
 ];
 
 const defaultState = {
   text: "Dear friend,\n\nThis is what your words look like in handwriting. Type or paste anything into the box on the left, pick a pen and a paper style, and watch it come to life on the page.\n\nEnjoy!",
-  fontId: "kalam",
+  fontId: "reenie",
   inkColor: "#1a3c8f",
   fontSizePt: 22,
   lineSpacing: 1.6,
