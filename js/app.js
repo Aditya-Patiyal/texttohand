@@ -29,11 +29,11 @@ const FONT_DEFS = [
 
 const defaultState = {
   text: "Dear friend,\n\nThis is what your words look like in handwriting. Type or paste anything into the box on the left, pick a pen and a paper style, and watch it come to life on the page.\n\nEnjoy!",
-  fontId: "caveat",
+  fontId: "kalam",
   inkColor: "#1a3c8f",
   fontSizePt: 22,
   lineSpacing: 1.6,
-  boldness: 0.6,
+  boldness: 1.1,
   pageSize: "a4",
   marginIn: 0.8,
   pageType: "ruled",
@@ -479,9 +479,9 @@ function render() {
     pageLines.forEach((line, li) => {
       const globalLine = pIdx * 10000 + li;
       const y = marginPx.top + li * lineHeightPx + baselineOffsetPx;
-      // a whole line leans consistently up or down as it runs right, like a hand
-      // that doesn't stay perfectly level across the page.
-      const lineDrift = (rnd(globalLine, state.seed, 9) - 0.5) * 2 * (fontSizePx * 0.05);
+      // a whole line leans very slightly as it runs right — subtle enough to stay
+      // readable as a straight, steady hand rather than a shaky one.
+      const lineDrift = (rnd(globalLine, state.seed, 9) - 0.5) * 2 * (fontSizePx * 0.012);
       let x = marginPx.left;
       let wordStartX = null;
       let wordChars = [];
@@ -489,17 +489,14 @@ function render() {
       line.forEach((c, idx) => {
         if (c.ch === " ") { x += c.w; return; }
         const gi = c.gi;
-        const rot = (rnd(gi, state.seed, 1) - 0.5) * 2 * (2.5 * Math.PI / 180);
-        const jx = (rnd(gi, state.seed, 2) - 0.5) * 2 * (fontSizePx * 0.03);
+        const rot = (rnd(gi, state.seed, 1) - 0.5) * 2 * (0.6 * Math.PI / 180);
+        const jx = (rnd(gi, state.seed, 2) - 0.5) * 2 * (fontSizePx * 0.008);
         const driftFrac = Math.min(1, Math.max(0, (x - marginPx.left) / Math.max(1, contentWidth)));
-        const jy = (rnd(gi, state.seed, 3) - 0.5) * 2 * (fontSizePx * 0.04)
-                 + Math.sin(gi * 0.35) * fontSizePx * 0.012
-                 + lineDrift * driftFrac;
-        const alpha = Math.min(1, Math.max(0.88, 0.97 + (rnd(gi, state.seed, 4) - 0.5) * 0.1));
-        const lightDelta = (rnd(gi, state.seed, 5) - 0.5) * 6;
-        const spacingJitter = (rnd(gi, state.seed, 6) - 0.5) * 2 * 1.1;
-        const pressureScale = state.pressure ? (0.96 + rnd(gi, state.seed, 7) * 0.08) : 1;
-        const inkColor = hslToRgbString(baseHsl[0], baseHsl[1], Math.min(90, Math.max(8, baseHsl[2] + lightDelta)), 1);
+        const jy = (rnd(gi, state.seed, 3) - 0.5) * 2 * (fontSizePx * 0.012) + lineDrift * driftFrac;
+        const alpha = 1;
+        const spacingJitter = (rnd(gi, state.seed, 6) - 0.5) * 2 * 0.35;
+        const pressureScale = state.pressure ? (0.99 + rnd(gi, state.seed, 7) * 0.02) : 1;
+        const inkColor = hslToRgbString(baseHsl[0], baseHsl[1], baseHsl[2], 1);
 
         if (wordStartX === null) wordStartX = x;
         wordChars.push(c);
@@ -514,8 +511,9 @@ function render() {
         if (state.boldness > 0) {
           // extra stroke on top of the fill fattens the glyph outline, simulating a bolder pen
           // without needing a separate bold font weight (custom-uploaded fonts are single-weight).
-          // Kept thin relative to boldness so it reads as a ballpoint/gel line rather than a marker.
-          ctx.lineWidth = state.boldness * fontSizePx * 0.014;
+          // Kept crisp (round joins, no feathering) so it reads as a solid gel/ballpoint
+          // line rather than a marker.
+          ctx.lineWidth = state.boldness * fontSizePx * 0.02;
           ctx.strokeStyle = inkColor;
           ctx.lineJoin = "round";
           ctx.miterLimit = 2;
