@@ -39,6 +39,10 @@ const FONT_DEFS = [
   { id: "labelleaurore", label: "La Belle Aurore", family: "La Belle Aurore", weight: 400 },
   { id: "dawning", label: "Dawning of a New Day", family: "Dawning of a New Day", weight: 400 },
   { id: "gloriahallelujah", label: "Gloria Hallelujah", family: "Gloria Hallelujah", weight: 400 },
+  { id: "squarepeg", label: "Square Peg", family: "Square Peg", weight: 400 },
+  { id: "liujianmaocao", label: "Liu Jian Mao Cao", family: "Liu Jian Mao Cao", weight: 400 },
+  { id: "grapenuts", label: "Grape Nuts", family: "Grape Nuts", weight: 400 },
+  { id: "longcang", label: "Long Cang", family: "Long Cang", weight: 400 },
 ];
 
 const defaultState = {
